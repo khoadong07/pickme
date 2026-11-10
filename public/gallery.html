@@ -1,0 +1,1026 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PickMe</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Design tokens ───────────────────────────────────────────── */
+:root {
+  /* Layout: sticky header + scrollable photo grid, drawer overlay */
+  --bg:        #e8e9ef;
+  --surface:   #ffffff;
+  --surface-2: #f4f4f8;
+  --border:    #dddde8;
+  --navy:      #1a2744;
+  --navy-dim:  #2e3f62;
+  --navy-soft: rgba(26, 39, 68, .09);
+  --navy-soft2:rgba(26, 39, 68, .05);
+  --text:      #1a2744;
+  --muted:     #7e839f;
+  --muted2:    #b2b5c8;
+  --red:       #e84054;
+  --red-soft:  rgba(232, 64, 84, .12);
+  --green:     #0fba81;
+  --green-soft:rgba(15, 186, 129, .12);
+  --shadow-sm: 0 1px 3px rgba(26,39,68,.07), 0 0 0 1px rgba(26,39,68,.04);
+  --shadow-md: 0 4px 16px rgba(26,39,68,.10), 0 0 0 1px rgba(26,39,68,.04);
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --col: 220px;
+  --gap: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:        #131620;
+    --surface:   #1c2030;
+    --surface-2: #242840;
+    --border:    #2c3050;
+    --navy:      #7b93d4;
+    --navy-dim:  #5f7cbf;
+    --navy-soft: rgba(123,147,212,.12);
+    --navy-soft2:rgba(123,147,212,.06);
+    --text:      #e4e8f4;
+    --muted:     #7e88a8;
+    --muted2:    #4a5070;
+    --red:       #f06070;
+    --red-soft:  rgba(240,96,112,.14);
+    --green:     #3dd1a0;
+    --green-soft:rgba(61,209,160,.12);
+    --shadow-sm: 0 1px 4px rgba(0,0,0,.3), 0 0 0 1px rgba(255,255,255,.04);
+    --shadow-md: 0 4px 20px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.05);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:#131620;--surface:#1c2030;--surface-2:#242840;--border:#2c3050;
+  --navy:#7b93d4;--navy-dim:#5f7cbf;--navy-soft:rgba(123,147,212,.12);--navy-soft2:rgba(123,147,212,.06);
+  --text:#e4e8f4;--muted:#7e88a8;--muted2:#4a5070;
+  --red:#f06070;--red-soft:rgba(240,96,112,.14);--green:#3dd1a0;--green-soft:rgba(61,209,160,.12);
+  --shadow-sm:0 1px 4px rgba(0,0,0,.3),0 0 0 1px rgba(255,255,255,.04);
+  --shadow-md:0 4px 20px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.05);
+  color-scheme: dark;
+}
+
+/* ── Reset & base ────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border: none; background: none; }
+img { max-width: 100%; display: block; }
+
+/* ── Loading / status screen ─────────────────────────────────── */
+#screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px max(16px, env(safe-area-inset-left, 0px));
+  text-align: center;
+}
+#screen .card-center {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
+  padding: 48px 40px;
+  max-width: 400px;
+  width: 100%;
+}
+#screen .icon-wrap {
+  width: 72px; height: 72px;
+  background: var(--navy-soft);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 20px;
+}
+#screen .icon-wrap svg { width: 32px; height: 32px; stroke: var(--navy); fill: none; stroke-width: 1.8; }
+#screen h1 { font-size: 24px; font-weight: 700; margin: 0 0 8px; color: var(--text); }
+#screen p  { color: var(--muted); margin: 0; font-size: 14px; line-height: 1.6; }
+
+/* ── App shell ───────────────────────────────────────────────── */
+#app { display: none; }
+
+/* ── Header ──────────────────────────────────────────────────── */
+header {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 20;
+  background: var(--surface);
+  box-shadow: 0 1px 0 var(--border);
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 30;
+  background: var(--surface);
+}
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px max(20px, env(safe-area-inset-left, 0px));
+  flex-wrap: wrap;
+}
+.album-info { min-width: 0; margin-right: 4px; }
+.album-info h1 {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+.album-info small { color: var(--muted); font-size: 12px; font-weight: 500; }
+.spacer { flex: 1; }
+
+/* Tab pills */
+.tabs {
+  display: flex;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 3px;
+  gap: 2px;
+}
+.tabs button {
+  border: none;
+  background: transparent;
+  padding: 5px 14px;
+  border-radius: 99px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+.tabs button.on {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(26,39,68,.25);
+}
+
+/* Size slider */
+.size-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.size-ctrl input[type=range] {
+  width: 90px;
+  accent-color: var(--navy);
+  cursor: pointer;
+}
+
+/* Save state */
+.save-state { font-size: 12px; color: var(--muted); min-width: 56px; text-align: right; }
+
+/* Picked button */
+.btn-picked {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--navy);
+  color: #fff;
+  border-radius: 99px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background .15s, transform .1s;
+  white-space: nowrap;
+}
+.btn-picked:hover { background: var(--navy-dim); }
+.btn-picked:active { transform: scale(.97); }
+.btn-picked .ico { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; }
+.count-badge {
+  background: rgba(255,255,255,.25);
+  border-radius: 99px;
+  padding: 1px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Progress bar */
+.progress {
+  height: 2px;
+  background: var(--navy);
+  width: 0;
+  transition: width .3s;
+  opacity: .7;
+}
+
+/* ── Notices ─────────────────────────────────────────────────── */
+.notice-wrap { padding: 12px max(20px, env(safe-area-inset-left, 0px)) 0; }
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  font-size: 13px;
+  line-height: 1.6;
+  background: var(--navy-soft);
+  color: var(--text);
+}
+.notice.ok { background: var(--green-soft); }
+.notice .ico-n { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.notice > div { flex: 1; white-space: pre-wrap; }
+.notice .x-btn {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  padding: 0 2px;
+  transition: color .15s;
+}
+.notice .x-btn:hover { color: var(--text); }
+
+/* ── Grid ────────────────────────────────────────────────────── */
+main {
+  padding: 20px max(20px, env(safe-area-inset-left, 0px));
+  padding-bottom: 80px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--col), 1fr));
+  gap: var(--gap);
+}
+
+/* Cards */
+.card {
+  position: relative;
+  aspect-ratio: 2/3;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  cursor: zoom-in;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .2s, transform .2s;
+  outline: 2.5px solid transparent;
+  outline-offset: 1px;
+}
+.grid.landscape .card { aspect-ratio: 3/2; }
+.grid.square    .card { aspect-ratio: 1; }
+.card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.card.picked { outline-color: var(--navy); }
+.card img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity .4s, transform .4s;
+}
+.card img.loaded { opacity: 1; }
+.card:hover img { transform: scale(1.03); }
+
+/* Card name label */
+.card .name {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 28px 10px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  background: linear-gradient(transparent, rgba(0,0,0,.65));
+  color: rgba(255,255,255,.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.card:hover .name, .card.picked .name { opacity: 1; }
+
+/* Heart button */
+.heart {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity .15s, transform .15s, background .15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.12);
+}
+.card:hover .heart, .card.picked .heart { opacity: 1; }
+.heart:hover { background: rgba(255,255,255,1); transform: scale(1.08); }
+.heart svg, .lb-heart svg {
+  width: 18px; height: 18px;
+  fill: none; stroke: var(--muted);
+  stroke-width: 2;
+  transition: transform .2s, fill .15s, stroke .15s;
+}
+.card.picked .heart svg, .lb-heart.on svg {
+  fill: var(--red);
+  stroke: var(--red);
+}
+.pop { animation: pop .32s ease; }
+@keyframes pop { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
+.shake { animation: shake .32s; }
+@keyframes shake { 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
+
+/* Empty state */
+.empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--muted);
+}
+.empty-icon {
+  width: 56px; height: 56px;
+  background: var(--navy-soft);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+}
+.empty-icon svg { width: 24px; height: 24px; stroke: var(--navy); fill: none; stroke-width: 1.6; }
+.empty p { margin: 4px 0 0; font-size: 13px; }
+
+/* Skeleton shimmer */
+.skeleton {
+  background: var(--surface-2);
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer { 50%{ opacity: .5 } }
+
+/* ── Lightbox ────────────────────────────────────────────────── */
+#lb {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(10,12,22,.95);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: none;
+}
+#lb.open { display: block; }
+#lb img {
+  position: absolute;
+  top: 60px; left: 72px;
+  width: calc(100% - 144px);
+  height: calc(100% - 120px);
+  object-fit: contain;
+}
+
+/* Lightbox top bar */
+.lb-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: linear-gradient(rgba(10,12,22,.7), transparent);
+}
+.lb-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(255,255,255,.65); font-size: 13px; }
+.lb-kbd { color: rgba(255,255,255,.35); font-size: 12px; }
+.lb-close {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.1);
+  color: rgba(255,255,255,.8);
+  font-size: 18px;
+  display: grid; place-items: center;
+  transition: background .15s;
+}
+.lb-close:hover { background: rgba(255,255,255,.2); }
+
+/* Nav arrows */
+.lb-nav {
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.1);
+  color: rgba(255,255,255,.8);
+  font-size: 20px;
+  display: grid; place-items: center;
+  transition: background .15s, transform .15s;
+}
+.lb-nav:hover { background: rgba(255,255,255,.2); transform: translateY(-50%) scale(1.05); }
+.lb-prev { left: 12px; } .lb-next { right: 12px; }
+
+/* Lightbox bottom heart */
+.lb-bottom {
+  position: absolute;
+  bottom: 20px; left: 0; right: 0;
+  display: flex; justify-content: center;
+}
+.lb-heart {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(30,34,54,.85);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 99px;
+  padding: 10px 22px;
+  color: rgba(255,255,255,.8);
+  font-size: 14px; font-weight: 500;
+  transition: background .15s, border-color .15s;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.lb-heart:hover { background: rgba(50,55,80,.9); }
+.lb-heart.on { border-color: var(--red); background: rgba(232,64,84,.15); color: #fff; }
+.lb-heart svg { width: 18px; height: 18px; }
+
+/* ── Drawer ──────────────────────────────────────────────────── */
+#drawer {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: min(380px, 100%);
+  z-index: 40;
+  background: var(--surface);
+  box-shadow: -4px 0 32px rgba(0,0,0,.12), -1px 0 0 var(--border);
+  transform: translateX(100%);
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+  display: flex; flex-direction: column;
+}
+#drawer.open { transform: none; }
+
+.dr-head {
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.dr-head h2 { margin: 0; font-size: 16px; font-weight: 700; flex: 1; color: var(--text); }
+.dr-head-close {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 16px;
+  display: grid; place-items: center;
+  transition: background .15s;
+}
+.dr-head-close:hover { background: var(--border); }
+
+.dr-list { flex: 1; overflow: auto; padding: 8px 0; }
+.dr-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 20px;
+  transition: background .12s;
+}
+.dr-item:hover { background: var(--navy-soft2); }
+.dr-item img {
+  width: 44px; height: 44px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--surface-2);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity .15s;
+}
+.dr-item img:hover { opacity: .8; }
+.dr-item span {
+  flex: 1;
+  font-size: 13px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: ui-monospace, Menlo, monospace;
+  color: var(--text);
+}
+.dr-item .rm-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 18px;
+  display: grid; place-items: center;
+  transition: background .12s, color .12s;
+}
+.dr-item .rm-btn:hover { background: var(--red-soft); color: var(--red); }
+
+.dr-foot {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  display: grid; gap: 10px;
+}
+.dr-foot textarea {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+  height: 76px;
+  resize: vertical;
+  outline: none;
+  transition: border-color .15s;
+  color: var(--text);
+}
+.dr-foot textarea:focus { border-color: var(--navy); }
+.dr-foot textarea::placeholder { color: var(--muted2); }
+.dr-foot small { color: var(--muted); font-size: 12px; text-align: center; }
+
+/* Submit button */
+.btn-submit {
+  width: 100%;
+  background: var(--navy);
+  color: #fff;
+  border-radius: var(--r-sm);
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  transition: background .15s, transform .1s, opacity .15s;
+}
+.btn-submit:hover { background: var(--navy-dim); }
+.btn-submit:active { transform: scale(.98); }
+.btn-submit:disabled { opacity: .5; cursor: not-allowed; }
+.btn-submit.sent { background: var(--green); }
+
+/* Drawer empty */
+.dr-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+.dr-empty svg { width: 32px; height: 32px; stroke: var(--muted2); fill: none; stroke-width: 1.5; display: block; margin: 0 auto 12px; }
+.dr-empty p { margin: 4px 0 0; font-size: 13px; }
+
+/* ── Toast ───────────────────────────────────────────────────── */
+#toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  background: var(--navy);
+  color: #fff;
+  padding: 11px 20px;
+  border-radius: 99px;
+  z-index: 99;
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+  font-size: 13px;
+  font-weight: 500;
+  max-width: calc(100% - 32px);
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(26,39,68,.3);
+  pointer-events: none;
+}
+#toast.show { transform: translateX(-50%); }
+
+/* ── Theme toggle ────────────────────────────────────────────── */
+.theme-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  display: grid; place-items: center;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.theme-btn:hover { background: var(--border); }
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .bar { padding: 12px max(16px, env(safe-area-inset-left, 0px)); gap: 8px; }
+  .size-ctrl, #ratio, .save-state { display: none; }
+  .album-info { flex: 1 1 100%; }
+  main { padding: 12px max(16px, env(safe-area-inset-left, 0px)) 80px; }
+  :root { --col: 150px; --gap: 7px; }
+  .heart { opacity: 1; width: 32px; height: 32px; }
+  #lb img { left: 0; width: 100%; }
+  .lb-nav { top: auto; bottom: 80px; transform: none; }
+  .lb-nav:hover { transform: scale(1.05); }
+  .lb-kbd { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Status screen -->
+<section id="screen">
+  <div class="card-center">
+    <div class="icon-wrap">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="7" width="26" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
+        <circle cx="16" cy="17" r="4" stroke="currentColor" stroke-width="2"/>
+        <path d="M11 7l1.5-3h7L21 7" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M19.5 13.5c.8-.8 2.1-.8 2.8 0 .8.8.8 2 0 2.8L19.5 19l-2.8-2.8c-.8-.8-.8-2 0-2.8.8-.7 2-.7 2.8 0z" fill="currentColor"/>
+      </svg>
+    </div>
+    <h1 id="screenTitle">Đang tải ảnh…</h1>
+    <p id="screenMsg"></p>
+  </div>
+</section>
+
+<!-- App -->
+<section id="app">
+  <header>
+    <div class="bar">
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div style="width:30px;height:30px;background:var(--navy);border-radius:8px;display:grid;place-items:center;flex-shrink:0">
+          <svg viewBox="0 0 32 32" fill="none" width="18" height="18">
+            <rect x="3" y="7" width="26" height="20" rx="4" stroke="white" stroke-width="2.2"/>
+            <circle cx="16" cy="17" r="4" stroke="white" stroke-width="2.2"/>
+            <path d="M11 7l1.5-3h7L21 7" stroke="white" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M19.5 13.5c.8-.8 2.1-.8 2.8 0 .8.8.8 2 0 2.8L19.5 19l-2.8-2.8c-.8-.8-.8-2 0-2.8.8-.7 2-.7 2.8 0z" fill="white"/>
+          </svg>
+        </div>
+        <span style="font-size:15px;font-weight:800;color:var(--navy);letter-spacing:-.3px">PickMe</span>
+      </div>
+
+      <div style="width:1px;height:20px;background:var(--border);flex-shrink:0"></div>
+
+      <div class="album-info">
+        <h1 id="albumTitle"></h1>
+        <small id="albumMeta"></small>
+      </div>
+
+      <div class="tabs" id="tabs">
+        <button data-f="all" class="on">Tất cả <span id="cAll"></span></button>
+        <button data-f="picked">Đã chọn <span id="cPicked"></span></button>
+        <button data-f="unpicked">Chưa chọn</button>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="tabs" id="ratio" title="Tỉ lệ khung">
+        <button data-r="portrait" class="on" title="Dọc">
+          <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor" style="display:block"><rect x="1" y="1" width="10" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        </button>
+        <button data-r="landscape" title="Ngang">
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor" style="display:block"><rect x="1" y="1" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        </button>
+        <button data-r="square" title="Vuông">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor" style="display:block"><rect x="1" y="1" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        </button>
+      </div>
+
+      <label class="size-ctrl">
+        Cỡ
+        <input type="range" id="sizeRange" min="120" max="420" value="220">
+      </label>
+
+      <span class="save-state" id="saveState"></span>
+
+      <button class="theme-btn" id="themeBtn" title="Đổi giao diện">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </button>
+
+      <button class="btn-picked" id="openDrawer">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Đã chọn
+        <span class="count-badge" id="cBadge">0</span>
+      </button>
+    </div>
+    <div class="progress" id="progress"></div>
+  </header>
+
+  <div id="notices"></div>
+
+  <main>
+    <div class="grid" id="grid"></div>
+  </main>
+</section>
+
+<!-- Lightbox -->
+<div id="lb">
+  <div class="lb-top">
+    <span class="lb-title" id="lbTitle"></span>
+    <span class="lb-kbd">← → chuyển · Space thả tim · Esc đóng</span>
+    <button class="lb-close" id="lbClose">✕</button>
+  </div>
+  <img id="lbImg" alt="">
+  <button class="lb-nav lb-prev" id="lbPrev">‹</button>
+  <button class="lb-nav lb-next" id="lbNext">›</button>
+  <div class="lb-bottom">
+    <button class="lb-heart" id="lbHeart">
+      <span class="ico-wrap"></span>
+      <span id="lbHeartText">Thả tim</span>
+    </button>
+  </div>
+</div>
+
+<!-- Drawer -->
+<aside id="drawer">
+  <div class="dr-head">
+    <h2>Ảnh đã chọn (<span id="dCount">0</span>)</h2>
+    <button class="dr-head-close" id="closeDrawer">✕</button>
+  </div>
+  <div class="dr-list" id="dList"></div>
+  <div class="dr-foot">
+    <textarea id="clientNote" placeholder="Ghi chú cho photographer (tuỳ chọn) — VD: ảnh số 12 làm da sáng hơn…"></textarea>
+    <button class="btn-submit" id="submitBtn">Gửi cho photographer</button>
+    <small id="footHint">Lựa chọn được lưu tự động. Bấm gửi khi bạn đã chọn xong.</small>
+  </div>
+</aside>
+
+<div id="toast"></div>
+
+<script>
+/* ── Theme ───────────────────────────────────────────────────── */
+(function(){try{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch{}})();
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);try{localStorage.setItem('theme',t)}catch{}}
+function updateThemeIcon(t){
+  const icon=document.getElementById('themeIcon'); if(!icon) return;
+  if(t==='dark') icon.innerHTML='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  else icon.innerHTML='<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
+}
+(function(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(!cur&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+  updateThemeIcon(isDark?'dark':'light');
+})();
+
+/* ── SVG icons ───────────────────────────────────────────────── */
+const HEART_SVG = '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+document.querySelector('#lbHeart .ico-wrap').outerHTML = HEART_SVG;
+
+/* ── Helpers ─────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const TOKEN = location.pathname.split('/')[2];
+const state = { g: null, files: [], picked: new Set(), filter: 'all', view: [], lbIndex: -1 };
+const thumb  = (id, sz = 600) => `/img?g=${TOKEN}&id=${id}&sz=${sz}`;
+const esc    = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate = s => new Date(s).toLocaleString('vi-VN', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit', year:'numeric' });
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function closed(title, msg) {
+  $('app').style.display = 'none';
+  $('screen').style.display = 'grid';
+  $('screenTitle').textContent = title;
+  $('screenMsg').textContent = msg;
+  document.querySelectorAll('#lb, #drawer').forEach(x => x.classList.remove('open'));
+}
+
+/* ── Load data ───────────────────────────────────────────────── */
+async function init() {
+  try {
+    const r    = await fetch('/api/g/' + TOKEN);
+    const data = await r.json();
+    if (!r.ok) return closed(r.status === 410 ? 'Link đã đóng' : 'Không tìm thấy', data.error);
+    apply(data);
+    $('screen').style.display = 'none';
+    $('app').style.display    = 'block';
+    render();
+  } catch { closed('Lỗi kết nối', 'Không tải được album. Vui lòng thử lại.'); }
+}
+
+function apply(data) {
+  state.g = data; state.files = data.files; state.picked = new Set(data.picks);
+  document.title = data.title + ' · Chọn ảnh';
+  $('albumTitle').textContent = data.title;
+  const meta = [];
+  if (data.clientName) meta.push(data.clientName);
+  meta.push(data.files.length + ' ảnh');
+  if (data.maxPicks)   meta.push('chọn tối đa ' + data.maxPicks);
+  if (data.expiresAt)  meta.push('hạn chót ' + fmtDate(data.expiresAt));
+  $('albumMeta').textContent = meta.join(' · ');
+  $('clientNote').value = data.clientNote || '';
+  renderNotices();
+}
+
+function renderNotices() {
+  const g = state.g, out = [];
+  const until = g.expiresAt ? ` đến ${fmtDate(g.expiresAt)}` : '';
+  if (g.submittedAt && g.changedAfterSubmit)
+    out.push(`<div class="notice"><span class="ico-n">✎</span><div>Bạn đã thay đổi lựa chọn so với lần gửi lúc ${fmtDate(g.submittedAt)}. Bấm <b>Gửi lại</b> để photographer nhận bản mới.</div></div>`);
+  else if (g.submittedAt)
+    out.push(`<div class="notice ok"><span class="ico-n">✓</span><div>Đã gửi ${g.picks.length} ảnh cho photographer lúc ${fmtDate(g.submittedAt)}. Bạn vẫn có thể thay đổi${until} rồi bấm gửi lại.</div></div>`);
+  if (g.note && !sessionStorage.getItem('hideNote' + TOKEN))
+    out.push(`<div class="notice"><span class="ico-n">✉️</span><div>${esc(g.note)}</div><button class="x-btn" onclick="sessionStorage.setItem('hideNote${TOKEN}',1);renderNotices()">×</button></div>`);
+
+  $('notices').innerHTML = out.map(h => `<div class="notice-wrap">${h}</div>`).join('');
+
+  const sent = g.submittedAt && !g.changedAfterSubmit;
+  const btn  = $('submitBtn');
+  btn.textContent = !g.submittedAt ? 'Gửi cho photographer' : sent ? 'Đã gửi ✓' : 'Gửi lại bản cập nhật';
+  btn.className   = 'btn-submit' + (sent ? ' sent' : '');
+  $('footHint').textContent = sent
+    ? `Bạn vẫn có thể sửa lựa chọn${until}.`
+    : 'Lựa chọn được lưu tự động. Bấm gửi khi bạn đã chọn xong.';
+}
+
+/* ── Auto-save ───────────────────────────────────────────────── */
+let saveTimer = null;
+function scheduleSave() {
+  $('saveState').textContent = 'Đang lưu…';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 600);
+}
+async function saveNow(submit = false) {
+  clearTimeout(saveTimer);
+  const r = await fetch(`/api/g/${TOKEN}/${submit ? 'submit' : 'picks'}`, {
+    method: submit ? 'POST' : 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ picks: [...state.picked], clientNote: $('clientNote').value }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (r.status === 410) { closed('Link đã đóng', data.error); throw new Error(data.error); }
+  if (!r.ok) { $('saveState').textContent = '⚠ Chưa lưu'; toast(data.error || 'Không lưu được, thử lại sau'); throw new Error(data.error); }
+  $('saveState').textContent = '✓ Đã lưu';
+  Object.assign(state.g, { picks: data.picks, submittedAt: data.submittedAt, changedAfterSubmit: data.changedAfterSubmit });
+  renderNotices();
+  return data;
+}
+/* Theme toggle button */
+document.getElementById('themeBtn').onclick = () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const isDark = cur==='dark'||(!cur&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const next = isDark ? 'light' : 'dark';
+  applyTheme(next); updateThemeIcon(next);
+};
+
+$('clientNote').oninput = scheduleSave;
+window.addEventListener('beforeunload', () => { if (saveTimer && $('saveState').textContent === 'Đang lưu…') saveNow().catch(() => {}); });
+
+/* ── Grid rendering ──────────────────────────────────────────── */
+const io = new IntersectionObserver(entries => {
+  for (const en of entries) if (en.isIntersecting) { en.target.src = en.target.dataset.src; io.unobserve(en.target); }
+}, { rootMargin: '600px' });
+
+let loadedCount = 0;
+function render() {
+  const f = state.filter;
+  state.view = state.files.filter(x => f === 'all' || (f === 'picked') === state.picked.has(x.id));
+  const grid = $('grid'); grid.innerHTML = ''; loadedCount = 0;
+
+  if (!state.view.length) {
+    grid.innerHTML = `<div class="empty">
+      <div class="empty-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+      <strong>${f === 'picked' ? 'Chưa có ảnh nào được thả tim.' : 'Không có ảnh.'}</strong>
+      <p>${f === 'picked' ? 'Bấm ♥ trên ảnh để chọn.' : ''}</p>
+    </div>`;
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+  state.view.forEach((file, i) => {
+    const card = document.createElement('div');
+    card.className = 'card skeleton' + (state.picked.has(file.id) ? ' picked' : '');
+    card.dataset.id = file.id;
+    card.innerHTML = `<img alt="" data-src="${thumb(file.id)}"><div class="name">${esc(file.folder + file.name)}</div><button class="heart" title="Thả tim">${HEART_SVG}</button>`;
+    const img = card.querySelector('img');
+    img.onload  = () => { img.classList.add('loaded'); card.classList.remove('skeleton'); progress(); };
+    img.onerror = () => { card.classList.remove('skeleton'); progress(); };
+    card.querySelector('.heart').onclick = e => { e.stopPropagation(); toggle(file.id, e.currentTarget); };
+    card.onclick = () => openLb(i);
+    io.observe(img);
+    frag.appendChild(card);
+  });
+  grid.appendChild(frag);
+  updateCounts();
+}
+
+function progress() {
+  loadedCount++;
+  const p = $('progress'); p.style.width = (loadedCount / state.view.length * 100) + '%';
+  if (loadedCount >= state.view.length) setTimeout(() => p.style.width = '0', 600);
+}
+
+function toggle(id, btn) {
+  const max = state.g.maxPicks;
+  if (!state.picked.has(id) && max && state.picked.size >= max) {
+    if (btn) { btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake'); }
+    return toast(`Bạn chỉ được chọn tối đa ${max} ảnh. Bỏ bớt tim để chọn ảnh khác nhé.`);
+  }
+  state.picked.has(id) ? state.picked.delete(id) : state.picked.add(id);
+  document.querySelectorAll(`.card[data-id="${id}"]`).forEach(c => c.classList.toggle('picked', state.picked.has(id)));
+  const svg = btn?.querySelector('svg');
+  if (svg) { svg.classList.remove('pop'); void svg.offsetWidth; svg.classList.add('pop'); }
+  if (state.lbIndex >= 0) syncLbHeart();
+  if (max && state.picked.size === max) toast(`Bạn đã chọn đủ ${max} ảnh 🎉`);
+  updateCounts();
+  scheduleSave();
+}
+
+function updateCounts() {
+  const n = state.picked.size, max = state.g.maxPicks;
+  $('cAll').textContent    = state.files.length;
+  $('cPicked').textContent = n || '';
+  $('cBadge').textContent  = max ? `${n}/${max}` : n;
+  $('dCount').textContent  = max ? `${n}/${max}` : n;
+  renderDrawer();
+}
+
+/* ── Tab & ratio controls ────────────────────────────────────── */
+$('tabs').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  state.filter = b.dataset.f; render();
+};
+$('ratio').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('#ratio button').forEach(x => x.classList.toggle('on', x === b));
+  $('grid').classList.remove('landscape', 'square');
+  if (b.dataset.r !== 'portrait') $('grid').classList.add(b.dataset.r);
+};
+$('sizeRange').oninput = e => document.documentElement.style.setProperty('--col', e.target.value + 'px');
+
+/* ── Lightbox ────────────────────────────────────────────────── */
+function openLb(i) { state.lbIndex = i; $('lb').classList.add('open'); document.body.style.overflow = 'hidden'; showLb(); }
+function closeLb()  { state.lbIndex = -1; $('lb').classList.remove('open'); document.body.style.overflow = ''; }
+function showLb() {
+  const f = state.view[state.lbIndex]; if (!f) return closeLb();
+  $('lbImg').src = thumb(f.id, 600);
+  const hi = new Image();
+  hi.onload = () => { if (state.view[state.lbIndex] === f) $('lbImg').src = hi.src; };
+  hi.src = thumb(f.id, 2000);
+  $('lbTitle').textContent = `${state.lbIndex + 1} / ${state.view.length} · ${f.folder}${f.name}`;
+  syncLbHeart();
+  const nx = state.view[state.lbIndex + 1]; if (nx) new Image().src = thumb(nx.id, 2000);
+}
+function syncLbHeart() {
+  const f = state.view[state.lbIndex]; if (!f) return;
+  const on = state.picked.has(f.id);
+  $('lbHeart').classList.toggle('on', on);
+  $('lbHeartText').textContent = on ? 'Đã thả tim' : 'Thả tim';
+}
+function step(d) { const n = state.lbIndex + d; if (n >= 0 && n < state.view.length) { state.lbIndex = n; showLb(); } }
+
+$('lbPrev').onclick  = () => step(-1);
+$('lbNext').onclick  = () => step(1);
+$('lbClose').onclick = closeLb;
+$('lbHeart').onclick = () => toggle(state.view[state.lbIndex].id, $('lbHeart'));
+
+document.addEventListener('keydown', e => {
+  if (state.lbIndex < 0) return;
+  if (e.key === 'ArrowRight')                     step(1);
+  else if (e.key === 'ArrowLeft')                 step(-1);
+  else if (e.key === 'Escape')                    closeLb();
+  else if (e.key === ' ' || e.key.toLowerCase() === 'h') { e.preventDefault(); $('lbHeart').click(); }
+});
+
+let tx = null;
+$('lb').addEventListener('touchstart', e => tx = e.touches[0].clientX, { passive: true });
+$('lb').addEventListener('touchend',   e => {
+  if (tx === null) return;
+  const dx = e.changedTouches[0].clientX - tx;
+  if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
+  tx = null;
+});
+
+/* ── Drawer ──────────────────────────────────────────────────── */
+function renderDrawer() {
+  const items = state.files.filter(f => state.picked.has(f.id));
+  const list  = $('dList');
+  if (!items.length) {
+    list.innerHTML = `<div class="dr-empty"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><strong>Chưa chọn ảnh nào.</strong><p>Bấm ♥ trên ảnh để chọn.</p></div>`;
+    return;
+  }
+  list.innerHTML = '';
+  for (const f of items) {
+    const row = document.createElement('div'); row.className = 'dr-item';
+    row.innerHTML = `<img src="${thumb(f.id, 120)}" alt=""><span title="${esc(f.folder + f.name)}">${esc(f.name)}</span><button class="rm-btn" title="Bỏ chọn">×</button>`;
+    row.querySelector('.rm-btn').onclick = () => toggle(f.id);
+    row.querySelector('img').onclick     = () => {
+      const i = state.view.findIndex(v => v.id === f.id);
+      if (i >= 0) { $('drawer').classList.remove('open'); openLb(i); }
+    };
+    list.appendChild(row);
+  }
+}
+
+$('openDrawer').onclick  = () => $('drawer').classList.add('open');
+$('closeDrawer').onclick = () => $('drawer').classList.remove('open');
+
+$('submitBtn').onclick = async () => {
+  const n = state.picked.size, max = state.g.maxPicks;
+  if (!n) return toast('Bạn chưa chọn ảnh nào.');
+  const g = state.g;
+  if (g.submittedAt && !g.changedAfterSubmit) return toast('Lựa chọn hiện tại đã được gửi rồi.');
+  const later = g.expiresAt ? `\nBạn vẫn sửa được đến ${fmtDate(g.expiresAt)}.` : '\nBạn vẫn có thể sửa sau khi gửi.';
+  const msg   = (max && n < max ? `Bạn mới chọn ${n}/${max} ảnh. Vẫn gửi cho photographer?` : `Gửi ${n} ảnh đã chọn cho photographer?`) + later;
+
+  /* Custom confirm since alert/confirm are blocked in artifact frame */
+  const confirmed = window.confirm ? window.confirm(msg) : true;
+  if (!confirmed) return;
+
+  $('submitBtn').disabled = true;
+  try {
+    const data = await saveNow(true);
+    $('drawer').classList.remove('open');
+    toast(data.submitCount > 1 ? 'Đã gửi bản cập nhật 💕' : 'Đã gửi lựa chọn. Cảm ơn bạn! 💕');
+  } catch {}
+  $('submitBtn').disabled = false;
+};
+
+init();
+</script>
+</body>
+</html>

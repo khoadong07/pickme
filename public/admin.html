@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PickMe · Quản lý</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens ──────────────────────────────────────────────────── */
+:root {
+  --bg:         #e8e9ef;
+  --surface:    #ffffff;
+  --surface-2:  #f4f4f8;
+  --border:     #dddde8;
+  --navy:       #1a2744;
+  --navy-dim:   #2e3f62;
+  --navy-soft:  rgba(26,39,68,.08);
+  --text:       #1a2744;
+  --muted:      #7e839f;
+  --muted2:     #b2b5c8;
+  --red:        #e84054;
+  --red-soft:   rgba(232,64,84,.10);
+  --green:      #0fba81;
+  --green-soft: rgba(15,186,129,.10);
+  --amber:      #f0a030;
+  --amber-soft: rgba(240,160,48,.10);
+  --blue:       #3b7af0;
+  --blue-soft:  rgba(59,122,240,.10);
+  --shadow-sm:  0 1px 3px rgba(26,39,68,.07),0 0 0 1px rgba(26,39,68,.04);
+  --shadow-md:  0 4px 16px rgba(26,39,68,.10),0 0 0 1px rgba(26,39,68,.04);
+  --r:          12px;
+  --r-sm:       8px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:#131620;--surface:#1c2030;--surface-2:#242840;--border:#2c3050;
+    --navy:#7b93d4;--navy-dim:#96acdf;--navy-soft:rgba(123,147,212,.10);
+    --text:#e4e8f4;--muted:#7e88a8;--muted2:#3e4460;
+    --red:#f06070;--red-soft:rgba(240,96,112,.12);
+    --green:#3dd1a0;--green-soft:rgba(61,209,160,.10);
+    --amber:#f0b840;--amber-soft:rgba(240,184,64,.10);
+    --blue:#6898f8;--blue-soft:rgba(104,152,248,.10);
+    --shadow-sm:0 1px 4px rgba(0,0,0,.3),0 0 0 1px rgba(255,255,255,.04);
+    --shadow-md:0 4px 20px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.05);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:#131620;--surface:#1c2030;--surface-2:#242840;--border:#2c3050;
+  --navy:#7b93d4;--navy-dim:#96acdf;--navy-soft:rgba(123,147,212,.10);
+  --text:#e4e8f4;--muted:#7e88a8;--muted2:#3e4460;
+  --red:#f06070;--red-soft:rgba(240,96,112,.12);
+  --green:#3dd1a0;--green-soft:rgba(61,209,160,.10);
+  --amber:#f0b840;--amber-soft:rgba(240,184,64,.10);
+  --blue:#6898f8;--blue-soft:rgba(104,152,248,.10);
+  --shadow-sm:0 1px 4px rgba(0,0,0,.3),0 0 0 1px rgba(255,255,255,.04);
+  --shadow-md:0 4px 20px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.05);
+  color-scheme: dark;
+}
+
+/* ── Reset ───────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+a{color:inherit}
+img{max-width:100%;display:block}
+
+/* ── Login ───────────────────────────────────────────────────── */
+#login{min-height:100vh;display:none;place-items:center;padding:24px max(16px,env(safe-area-inset-left,0px))}
+.login-box{width:min(380px,100%)}
+.login-logo{
+  width:60px;height:60px;background:var(--navy-soft);border-radius:16px;
+  display:grid;place-items:center;margin:0 auto 28px;
+}
+.login-logo svg{width:28px;height:28px;stroke:var(--navy);fill:none;stroke-width:1.8}
+.login-box h1{font-size:26px;font-weight:700;margin:0 0 4px;text-align:center}
+.login-box p{color:var(--muted);text-align:center;margin:0 0 28px;font-size:14px}
+.login-card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow-md);padding:28px}
+.login-card .err{color:var(--red);font-size:13px;min-height:1.4em;margin:8px 0 2px}
+
+/* ── Layout ──────────────────────────────────────────────────── */
+#app{display:none}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+header{
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:20;
+  background:var(--surface);box-shadow:0 1px 0 var(--border);
+  display:flex;align-items:center;gap:12px;
+  padding:0 max(24px,env(safe-area-inset-left,0px));
+  height:58px;
+}
+.header-logo{
+  width:34px;height:34px;background:var(--navy);border-radius:9px;
+  display:grid;place-items:center;flex-shrink:0;
+}
+.header-logo svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2}
+.header-title{font-size:16px;font-weight:700;flex:1}
+.header-title span{color:var(--muted);font-weight:400}
+
+.wrap{
+  display:grid;
+  grid-template-columns:380px 1fr;
+  gap:20px;
+  padding:20px max(24px,env(safe-area-inset-left,0px));
+  max-width:1360px;
+  margin:0 auto;
+  align-items:start;
+}
+
+/* ── Cards ───────────────────────────────────────────────────── */
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow-sm);padding:20px}
+.card h2{font-size:15px;font-weight:700;margin:0 0 16px}
+.create{position:sticky;top:calc(env(safe-area-inset-top,0px) + 70px)}
+
+/* ── Form elements ───────────────────────────────────────────── */
+label.f{display:block;margin-bottom:12px}
+label.f>span{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+label.f>span b{color:var(--red);font-weight:600}
+.in{
+  width:100%;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:9px 11px;outline:none;
+  transition:border-color .15s,box-shadow .15s;color:var(--text);
+  font-size:14px;
+}
+.in:focus{border-color:var(--navy);box-shadow:0 0 0 3px var(--navy-soft)}
+.in::placeholder{color:var(--muted2)}
+textarea.in{resize:vertical;min-height:70px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-label{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.error{color:var(--red);font-size:13px;min-height:1.3em;margin:6px 0 8px}
+
+/* Chips (expiry) */
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.chip{
+  border:1px solid var(--border);background:var(--surface-2);
+  border-radius:99px;padding:4px 12px;font-size:12px;font-weight:500;
+  color:var(--muted);transition:all .15s;
+}
+.chip:hover{border-color:var(--navy);color:var(--navy)}
+.chip.on{border-color:var(--navy);background:var(--navy);color:#fff}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:1px solid var(--border);background:var(--surface-2);
+  border-radius:var(--r-sm);padding:7px 13px;font-size:13px;font-weight:500;
+  white-space:nowrap;transition:background .15s,border-color .15s,color .15s,transform .1s;
+  text-decoration:none;color:var(--text);
+}
+.btn:hover{background:var(--border)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:600}
+.btn.primary:hover{background:var(--navy-dim);border-color:var(--navy-dim)}
+.btn.accent{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:600}
+.btn.accent:hover{background:var(--navy-dim);border-color:var(--navy-dim)}
+.btn.danger:hover{border-color:var(--red);color:var(--red);background:var(--red-soft)}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:7px}
+.btn.full{width:100%;padding:11px}
+
+/* Result box */
+.result{
+  margin-top:14px;padding:14px;border-radius:var(--r-sm);
+  background:var(--green-soft);border:1px solid rgba(15,186,129,.3);display:none;
+}
+.result.show{display:block}
+.result-label{font-size:12px;font-weight:600;color:var(--green);margin-bottom:8px}
+.linkbox{display:flex;gap:6px}
+.linkbox .in{flex:1;min-width:0;font-family:ui-monospace,Menlo,monospace;font-size:12px;padding:7px 10px}
+.result-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+
+/* ── Gallery list ────────────────────────────────────────────── */
+.list-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.list-head h2{margin:0;flex:1;font-size:15px;font-weight:700}
+.search-wrap{display:flex;gap:6px;align-items:center}
+.search{width:200px}
+.btn-icon{
+  width:34px;height:34px;border-radius:var(--r-sm);border:1px solid var(--border);
+  background:var(--surface);display:grid;place-items:center;
+  transition:background .15s;flex-shrink:0;
+}
+.btn-icon:hover{background:var(--surface-2)}
+.btn-icon svg{width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2}
+
+/* Gallery card */
+.g{
+  background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow-sm);
+  padding:16px 18px;margin-bottom:12px;
+  transition:box-shadow .2s;
+}
+.g:hover{box-shadow:var(--shadow-md)}
+.g-top{display:flex;gap:12px;align-items:flex-start}
+.g-info{flex:1;min-width:0}
+.g-title{font-weight:700;font-size:15px;margin-bottom:4px}
+.g-meta{color:var(--muted);font-size:12px;display:flex;flex-wrap:wrap;gap:3px 12px;line-height:1.6}
+
+/* Status badges */
+.badge{font-size:11px;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.st-active   {background:var(--blue-soft); color:var(--blue)}
+.st-submitted{background:var(--green-soft);color:var(--green)}
+.st-changed  {background:var(--amber-soft);color:var(--amber)}
+.st-expired  {background:var(--amber-soft);color:var(--amber)}
+.st-revoked  {background:var(--red-soft);  color:var(--red)}
+
+/* Progress meter */
+.meter{height:3px;background:var(--border);border-radius:4px;margin:12px 0 8px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--navy);border-radius:4px;transition:width .4s}
+.meter-label{font-size:12px;color:var(--muted);margin-bottom:10px}
+.meter-label b{color:var(--text);font-weight:600}
+
+/* Gallery actions */
+.g-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.g-actions .linkbox{flex:1 1 240px}
+
+/* Picks panel */
+.picks{margin-top:14px;border-top:1px solid var(--border);padding-top:14px;display:none}
+.picks.open{display:block}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:5px;margin-bottom:12px}
+.thumbs figure{margin:0}
+.thumbs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;background:var(--surface-2);display:block}
+.thumbs figcaption{font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px;font-family:ui-monospace,Menlo,monospace}
+.opts{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:8px}
+.opts label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.names{font-family:ui-monospace,Menlo,monospace;font-size:12px;min-height:72px;line-height:1.6}
+.ver{font-size:12px;color:var(--muted);margin-bottom:10px;padding:8px 10px;background:var(--surface-2);border-radius:var(--r-sm)}
+.ver b{color:var(--text);font-weight:600}
+.client-note{background:var(--surface-2);border-radius:var(--r-sm);padding:10px 12px;font-size:13px;margin-bottom:12px;white-space:pre-wrap;line-height:1.6}
+.client-note b{display:block;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.diff{border:1px solid rgba(240,160,48,.3);background:var(--amber-soft);border-radius:var(--r-sm);padding:12px;margin-bottom:14px}
+.diff-head{font-size:12px;color:var(--amber);margin-bottom:10px;font-weight:500}
+.diff .thumbs{margin-bottom:6px}
+.diff-label{font-size:11px;color:var(--muted);margin:6px 0;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+figure.add img{outline:2px solid var(--green);outline-offset:-2px}
+figure.rm  img{opacity:.35;outline:2px solid var(--red);outline-offset:-2px}
+.empty{text-align:center;color:var(--muted);padding:60px 20px;font-size:14px}
+
+/* ── Toast ───────────────────────────────────────────────────── */
+#toast{
+  position:fixed;bottom:28px;left:50%;
+  transform:translateX(-50%) translateY(120px);
+  background:var(--navy);color:#fff;
+  padding:10px 20px;border-radius:99px;z-index:99;
+  transition:transform .28s cubic-bezier(.4,0,.2,1);
+  font-size:13px;font-weight:500;
+  box-shadow:0 4px 16px rgba(26,39,68,.3);
+  pointer-events:none;
+  max-width:calc(100% - 40px);text-align:center;
+}
+#toast.show{transform:translateX(-50%)}
+
+/* ── Theme toggle ────────────────────────────────────────────── */
+.theme-btn{
+  width:34px;height:34px;border-radius:50%;
+  border:1px solid var(--border);background:var(--surface-2);
+  display:grid;place-items:center;transition:background .15s;
+  flex-shrink:0;
+}
+.theme-btn:hover{background:var(--border)}
+.theme-btn svg{width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2;transition:.2s}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media(max-width:900px){
+  .wrap{grid-template-columns:1fr;padding:14px max(16px,env(safe-area-inset-left,0px))}
+  .create{position:static}
+  header{padding:0 max(16px,env(safe-area-inset-left,0px))}
+  .search{width:100%}
+}
+@media(max-width:480px){
+  .row2{grid-template-columns:1fr}
+  .g-actions{gap:4px}
+  .header-title span{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<section id="login">
+  <div class="login-box">
+    <div class="login-logo">
+      <!-- PickMe logo: camera frame + heart pick -->
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="7" width="26" height="20" rx="4" stroke="currentColor" stroke-width="2"/>
+        <circle cx="16" cy="17" r="4" stroke="currentColor" stroke-width="2"/>
+        <path d="M11 7l1.5-3h7L21 7" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M19.5 13.5c.8-.8 2.1-.8 2.8 0 .8.8.8 2 0 2.8L19.5 19l-2.8-2.8c-.8-.8-.8-2 0-2.8.8-.7 2-.7 2.8 0z" fill="currentColor" stroke="none"/>
+      </svg>
+    </div>
+    <h1>PickMe</h1>
+    <p>Trang quản lý dành cho photographer</p>
+    <div class="login-card">
+      <form id="loginForm">
+        <label class="f">
+          <span>Mật khẩu quản lý</span>
+          <input class="in" type="password" id="pw" placeholder="Nhập mật khẩu…" autofocus required>
+        </label>
+        <div class="error" id="loginErr"></div>
+        <button class="btn primary full" type="submit">Đăng nhập</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- App -->
+<section id="app">
+  <header>
+    <div class="header-logo">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="7" width="26" height="20" rx="4" stroke="white" stroke-width="2"/>
+        <circle cx="16" cy="17" r="4" stroke="white" stroke-width="2"/>
+        <path d="M11 7l1.5-3h7L21 7" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M19.5 13.5c.8-.8 2.1-.8 2.8 0 .8.8.8 2 0 2.8L19.5 19l-2.8-2.8c-.8-.8-.8-2 0-2.8.8-.7 2-.7 2.8 0z" fill="white"/>
+      </svg>
+    </div>
+    <div class="header-title">PickMe <span>· Quản lý</span></div>
+    <button class="theme-btn" id="themeBtn" title="Đổi giao diện">
+      <svg id="themeIcon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </button>
+    <button class="btn sm" id="logout">Đăng xuất</button>
+  </header>
+
+  <div class="wrap">
+    <!-- Create form -->
+    <form class="card create" id="createForm">
+      <h2>Tạo link chọn ảnh</h2>
+
+      <label class="f">
+        <span>Link thư mục Google Drive <b>*</b></span>
+        <input class="in" name="driveUrl" placeholder="https://drive.google.com/drive/folders/…" required>
+      </label>
+
+      <label class="f">
+        <span>Tên album</span>
+        <input class="in" name="title" placeholder="VD: Pre-wedding Đà Lạt">
+      </label>
+
+      <div class="row2">
+        <label class="f"><span>Tên khách</span><input class="in" name="clientName" placeholder="Chị Lan"></label>
+        <label class="f"><span>Số điện thoại</span><input class="in" name="phone" placeholder="09xx…"></label>
+      </div>
+
+      <label class="f">
+        <span>Số ảnh tối đa được chọn</span>
+        <input class="in" name="maxPicks" type="number" min="0" placeholder="Để trống = không giới hạn">
+      </label>
+
+      <div class="f" style="margin-bottom:12px">
+        <div class="field-label">Link hết hạn sau</div>
+        <div class="chips" id="expChips">
+          <button type="button" class="chip" data-d="1">1 ngày</button>
+          <button type="button" class="chip" data-d="3">3 ngày</button>
+          <button type="button" class="chip on" data-d="7">7 ngày</button>
+          <button type="button" class="chip" data-d="14">14 ngày</button>
+          <button type="button" class="chip" data-d="30">30 ngày</button>
+          <button type="button" class="chip" data-d="0">Không hết hạn</button>
+        </div>
+        <input class="in" type="datetime-local" name="expiresAt" id="expInput">
+      </div>
+
+      <label class="f">
+        <span>Lời nhắn cho khách</span>
+        <textarea class="in" name="note" placeholder="VD: Chọn giúp mình 30 ảnh để chỉnh màu nhé!"></textarea>
+      </label>
+
+      <div class="error" id="createErr"></div>
+      <button class="btn accent full" id="createBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Tạo link
+      </button>
+
+      <div class="result" id="result">
+        <div class="result-label">✓ Link đã tạo — <span id="resultInfo"></span></div>
+        <div class="linkbox">
+          <input class="in" id="resultLink" readonly>
+          <button type="button" class="btn primary sm" id="copyResult">Copy</button>
+        </div>
+        <div class="result-actions">
+          <button type="button" class="btn sm" id="copyMsg">Copy kèm lời nhắn</button>
+          <a class="btn sm" id="openResult" target="_blank">Mở thử ↗</a>
+        </div>
+      </div>
+    </form>
+
+    <!-- Gallery list -->
+    <div>
+      <div class="list-head">
+        <h2>Các link đã tạo <span id="total" style="color:var(--muted);font-weight:400"></span></h2>
+        <div class="search-wrap">
+          <input class="in search" id="search" placeholder="Tìm khách, album…">
+          <button class="btn-icon" id="reload" title="Làm mới">
+            <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="list"></div>
+    </div>
+  </div>
+</section>
+
+<div id="toast"></div>
+
+<script>
+/* ── Theme ───────────────────────────────────────────────────── */
+(function(){
+  try{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch{}
+})();
+
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  try{localStorage.setItem('theme',t)}catch{}
+  updateThemeIcon(t);
+}
+function updateThemeIcon(t){
+  const icon=$('themeIcon');
+  if(!icon)return;
+  if(t==='dark'){
+    icon.innerHTML='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  } else {
+    icon.innerHTML='<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
+  }
+}
+
+/* ── Core ────────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+let galleries = [], openPicks = new Set(), publicUrl = location.origin;
+
+const api = async (path, opts = {}) => {
+  const r = await fetch('/api/admin' + path, { headers: { 'Content-Type': 'application/json' }, ...opts, body: opts.body && JSON.stringify(opts.body) });
+  const data = await r.json().catch(() => ({}));
+  if (r.status === 401 && path !== '/login') { showLogin(); throw new Error('Chưa đăng nhập'); }
+  if (!r.ok) throw new Error(data.error || 'Lỗi ' + r.status);
+  return data;
+};
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const linkOf = g => `${publicUrl}/g/${g.token}`;
+const fmtDate = s => new Date(s).toLocaleString('vi-VN', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit', year:'numeric' });
+function toast(msg) { const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2000); }
+async function copy(text, msg='Đã copy') {
+  try { await navigator.clipboard.writeText(text); } catch { const i=document.createElement('input'); i.value=text; document.body.appendChild(i); i.select(); document.execCommand('copy'); document.body.removeChild(i); }
+  toast(msg);
+}
+
+/* ── Theme toggle ────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const isDark = cur === 'dark' || (!cur && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  updateThemeIcon(isDark ? 'dark' : 'light');
+  $('themeBtn').onclick = () => {
+    const now = document.documentElement.getAttribute('data-theme');
+    const isDark2 = now === 'dark' || (!now && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    applyTheme(isDark2 ? 'light' : 'dark');
+  };
+});
+
+/* ── Auth ────────────────────────────────────────────────────── */
+function showLogin() { $('app').style.display='none'; $('login').style.display='grid'; }
+async function boot() {
+  try {
+    const me = await api('/me');
+    if (me.publicUrl) publicUrl = me.publicUrl.replace(/\/$/, '');
+    $('login').style.display='none'; $('app').style.display='block';
+    loadList();
+  } catch {}
+}
+$('loginForm').onsubmit = async e => {
+  e.preventDefault(); $('loginErr').textContent='';
+  try { await api('/login', { method:'POST', body:{ password: $('pw').value } }); boot(); }
+  catch (err) { $('loginErr').textContent = err.message; }
+};
+$('logout').onclick = async () => { await api('/logout', { method:'POST' }); showLogin(); };
+
+/* ── Expiry chips ────────────────────────────────────────────── */
+const toLocalInput = d => new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+function setExpDays(days) {
+  if (+days===0) { $('expInput').value=''; return; }
+  const d = new Date(); d.setDate(d.getDate() + +days); d.setHours(23,59,0,0);
+  $('expInput').value = toLocalInput(d);
+}
+$('expChips').onclick = e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  document.querySelectorAll('#expChips .chip').forEach(x => x.classList.toggle('on', x===c));
+  setExpDays(c.dataset.d);
+};
+$('expInput').oninput = () => document.querySelectorAll('#expChips .chip').forEach(x => x.classList.remove('on'));
+setExpDays(7);
+
+/* ── Create gallery ──────────────────────────────────────────── */
+let lastCreated = null;
+$('createForm').onsubmit = async e => {
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(e.target));
+  if (fd.expiresAt) fd.expiresAt = new Date(fd.expiresAt).toISOString();
+  $('createErr').textContent=''; $('createBtn').disabled=true; $('createBtn').textContent='Đang đọc Drive…';
+  try {
+    const { gallery } = await api('/galleries', { method:'POST', body:fd });
+    lastCreated = gallery;
+    $('resultLink').value = linkOf(gallery);
+    $('openResult').href  = linkOf(gallery);
+    $('resultInfo').textContent = `${gallery.fileCount} ảnh` + (gallery.maxPicks ? ` · tối đa ${gallery.maxPicks}` : '');
+    $('result').classList.add('show');
+    copy(linkOf(gallery), 'Đã tạo & copy link');
+    e.target.querySelectorAll('input:not(#expInput), textarea').forEach(i => i.value='');
+    loadList();
+  } catch (err) { $('createErr').textContent = err.message; }
+  finally { $('createBtn').disabled=false; $('createBtn').innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Tạo link'; }
+};
+$('copyResult').onclick = () => copy($('resultLink').value);
+$('copyMsg').onclick    = () => lastCreated && copy(shareMessage(lastCreated), 'Đã copy tin nhắn');
+function shareMessage(g) {
+  const lines = [`Chào ${g.clientName||'bạn'}, ảnh ${g.title} đã sẵn sàng 📷`, `Bạn vào link này để xem và thả tim ảnh muốn chọn nhé:`, linkOf(g)];
+  if (g.maxPicks) lines.push(`• Chọn tối đa ${g.maxPicks} ảnh`);
+  if (g.expiresAt) lines.push(`• Link có hiệu lực đến ${fmtDate(g.expiresAt)}`);
+  lines.push('Chọn xong bấm "Gửi cho photographer" là mình nhận được ạ.');
+  return lines.join('\n');
+}
+
+/* ── List ────────────────────────────────────────────────────── */
+const STATUS = { active:'Đang chờ', submitted:'Đã gửi', changed:'Đã sửa, chưa gửi lại', expired:'Hết hạn', revoked:'Đã thu hồi' };
+function relTime(s) {
+  const ms = new Date(s)-Date.now(), abs=Math.abs(ms), d=Math.floor(abs/864e5), h=Math.floor(abs%864e5/36e5);
+  const txt = d ? `${d} ngày${h?' '+h+' giờ':''}` : h ? `${h} giờ` : `${Math.max(1,Math.round(abs/6e4))} phút`;
+  return ms>0 ? `còn ${txt}` : `hết hạn ${txt} trước`;
+}
+async function loadList() { try { galleries=(await api('/galleries')).galleries; renderList(); } catch {} }
+$('reload').onclick = loadList;
+$('search').oninput = renderList;
+setInterval(() => { if ($('app').style.display==='block' && !document.hidden) loadList(); }, 30000);
+
+function renderList() {
+  const q=$('search').value.trim().toLowerCase();
+  const items=galleries.filter(g => !q || [g.title,g.clientName,g.phone].join(' ').toLowerCase().includes(q));
+  $('total').textContent=`(${galleries.length})`;
+  if (!items.length) { $('list').innerHTML=`<div class="empty">${galleries.length?'Không có kết quả.':'Chưa có link nào. Tạo link đầu tiên ở bên trái.'}</div>`; return; }
+  $('list').innerHTML = items.map(g => {
+    const n=mainFiles(g).length, max=g.maxPicks;
+    const pct=max ? Math.min(100,n/max*100) : (n?100:0);
+    return `<div class="g" data-t="${g.token}">
+      <div class="g-top">
+        <div class="g-info">
+          <div class="g-title">${esc(g.title)}</div>
+          <div class="g-meta">
+            ${g.clientName?`<span>👤 ${esc(g.clientName)}</span>`:''}${g.phone?`<span>📞 ${esc(g.phone)}</span>`:''}
+            <span>🖼 ${g.fileCount} ảnh</span>
+            <span>⏱ ${g.expiresAt?relTime(g.expiresAt):'không hết hạn'}</span>
+            ${g.submittedAt?`<span>✓ gửi${g.submitCount>1?` lần ${g.submitCount}`:''} lúc ${fmtDate(g.submittedAt)}</span>`:''}
+            ${g.updatedAt&&g.updatedAt!==g.submittedAt?`<span>✎ sửa ${fmtDate(g.updatedAt)}</span>`:''}
+          </div>
+        </div>
+        <span class="badge st-${g.status}">${STATUS[g.status]}</span>
+      </div>
+      <div class="meter"><i style="width:${pct}%"></i></div>
+      <div class="meter-label">♥ <b>${n}</b>${max?' / '+max:''} ảnh ${g.sentFiles?'trong bản đã gửi':'đang chọn (chưa gửi)'}</div>
+      <div class="g-actions">
+        <div class="linkbox"><input class="in" style="font-size:12px;padding:6px 9px" value="${linkOf(g)}" readonly><button class="btn sm" data-a="copy">Copy</button></div>
+        <button class="btn sm" data-a="picks">${openPicks.has(g.token)?'Ẩn':'Xem'} ảnh chọn</button>
+        <button class="btn sm" data-a="msg">Copy tin nhắn</button>
+        ${mainFiles(g).length?`<a class="btn sm accent" style="text-decoration:none" href="/api/admin/galleries/${g.token}/zip" data-a="zip">⬇ ZIP (${mainFiles(g).length})</a>`:''}
+        <button class="btn sm" data-a="extend">+7 ngày</button>
+        <button class="btn sm" data-a="max">Đổi giới hạn</button>
+        <button class="btn sm" data-a="refresh">Cập nhật ảnh</button>
+        ${g.revoked?`<button class="btn sm" data-a="activate">Kích hoạt lại</button>`:`<button class="btn sm danger" data-a="revoke">Thu hồi</button>`}
+        <button class="btn sm danger" data-a="delete">Xoá</button>
+      </div>
+      <div class="picks ${openPicks.has(g.token)?'open':''}">${picksHtml(g)}</div>
+    </div>`;
+  }).join('');
+}
+
+const mainFiles = g => g.sentFiles || g.draftFiles;
+const thumbHtml = (g,f,cls='') => `<figure class="${cls}"><img loading="lazy" src="/img?g=${g.token}&id=${f.id}&sz=200" alt=""><figcaption title="${esc(f.folder+f.name)}">${esc(f.name)}</figcaption></figure>`;
+
+function diffHtml(g) {
+  if (g.status!=='changed'||!g.sentFiles) return '';
+  const sentIds=new Set(g.sentFiles.map(f=>f.id)), draftIds=new Set(g.draftFiles.map(f=>f.id));
+  const added=g.draftFiles.filter(f=>!sentIds.has(f.id)), removed=g.sentFiles.filter(f=>!draftIds.has(f.id));
+  const noteChanged=(g.sentNote||'')!==(g.clientNote||'');
+  return `<div class="diff">
+    <div class="diff-head">✎ Khách đang sửa (${fmtDate(g.updatedAt)}) nhưng <b>chưa bấm gửi lại</b>: ${[added.length&&`+${added.length} ảnh`,removed.length&&`−${removed.length} ảnh`,noteChanged&&'đổi ghi chú'].filter(Boolean).join(', ')}</div>
+    ${added.length?`<div class="diff-label">Thêm vào</div><div class="thumbs">${added.map(f=>thumbHtml(g,f,'add')).join('')}</div>`:''}
+    ${removed.length?`<div class="diff-label">Bỏ ra</div><div class="thumbs">${removed.map(f=>thumbHtml(g,f,'rm')).join('')}</div>`:''}
+    <a class="btn sm" style="text-decoration:none;margin:4px 0 8px;display:inline-flex" href="/api/admin/galleries/${g.token}/zip?v=draft" data-a="zip">⬇ ZIP bản đang sửa (${g.draftFiles.length})</a>
+    ${noteChanged?`<div class="diff-label">Ghi chú mới</div><div class="client-note" style="margin:0">${esc(g.clientNote)||'<i>(trống)</i>'}</div>`:''}
+  </div>`;
+}
+
+function picksHtml(g) {
+  const files=mainFiles(g), note=g.sentFiles?g.sentNote:g.clientNote;
+  if (!files.length&&!note) return '<div style="color:var(--muted);font-size:13px">Khách chưa chọn ảnh nào.</div>';
+  const ver=g.sentFiles
+    ?`<b>Bản khách gửi gần nhất</b>${g.submitCount>1?` (lần ${g.submitCount})`:''} · ${fmtDate(g.submittedAt)} · ${files.length} ảnh`
+    :`<b>Bản nháp</b> · khách chưa bấm gửi · cập nhật ${fmtDate(g.updatedAt)} · ${files.length} ảnh`;
+  return `${diffHtml(g)}<div class="ver">${ver}</div>
+    ${note?`<div class="client-note"><b>Ghi chú của khách</b>${esc(note)}</div>`:''}
+    <div class="thumbs">${files.map(f=>thumbHtml(g,f)).join('')}</div>
+    <div class="opts">
+      <label><input type="checkbox" data-o="ext"> Giữ đuôi file</label>
+      <label><input type="checkbox" data-o="comma" checked> Dấu phẩy (Lightroom)</label>
+    </div>
+    <textarea class="in names" readonly>${esc(namesOf(g,false,true))}</textarea>
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn sm primary" data-a="copynames">Copy danh sách tên</button>
+      <button class="btn sm" data-a="txt">Tải .txt</button>
+      <a class="btn sm" style="text-decoration:none" href="/api/admin/galleries/${g.token}/zip" data-a="zip">⬇ ZIP ảnh</a>
+    </div>`;
+}
+function namesOf(g,keepExt,comma) {
+  return mainFiles(g).map(f=>keepExt?f.name:f.name.replace(/\.[^.]+$/,'')).join(comma?', ':'\n');
+}
+function currentNames(card,g) {
+  return namesOf(g,card.querySelector('[data-o=ext]').checked,card.querySelector('[data-o=comma]').checked);
+}
+
+$('list').addEventListener('change', e => {
+  const card=e.target.closest('.g'); if(!card||!e.target.dataset.o) return;
+  const g=galleries.find(x=>x.token===card.dataset.t);
+  card.querySelector('.names').value=currentNames(card,g);
+});
+
+$('list').addEventListener('click', async e => {
+  const b=e.target.closest('[data-a]'); if(!b) return;
+  const card=b.closest('.g'), t=card.dataset.t, g=galleries.find(x=>x.token===t);
+  const patch=async(body,msg)=>{ await api('/galleries/'+t,{method:'PATCH',body}); toast(msg); loadList(); };
+  try {
+    switch(b.dataset.a) {
+      case 'copy': return copy(linkOf(g),'Đã copy link');
+      case 'msg':  return copy(shareMessage(g),'Đã copy tin nhắn');
+      case 'picks':
+        openPicks.has(t)?openPicks.delete(t):openPicks.add(t); return renderList();
+      case 'copynames':
+        if(!mainFiles(g).length) return toast('Chưa có ảnh nào');
+        return copy(currentNames(card,g),`Đã copy ${mainFiles(g).length} tên file`);
+      case 'txt': {
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(new Blob([currentNames(card,g)],{type:'text/plain'}));
+        a.download=`${(g.clientName||g.title).replace(/[^\p{L}\p{N}]+/gu,'-')}-${mainFiles(g).length}-anh.txt`; a.click();
+        return;
+      }
+      case 'zip': return toast('Đang tải ảnh gốc từ Drive & nén ZIP…');
+      case 'extend': {
+        const base=Math.max(Date.now(),g.expiresAt?new Date(g.expiresAt).getTime():Date.now());
+        return patch({expiresAt:new Date(base+7*864e5).toISOString()},'Đã gia hạn thêm 7 ngày');
+      }
+      case 'max': {
+        const v=prompt('Số ảnh tối đa (0 = không giới hạn):',g.maxPicks||0);
+        if(v===null) return;
+        return patch({maxPicks:+v},'Đã cập nhật');
+      }
+      case 'refresh':
+        b.disabled=true; b.textContent='Đang đọc…';
+        await api(`/galleries/${t}/refresh`,{method:'POST'}); toast('Đã cập nhật danh sách ảnh'); return loadList();
+      case 'revoke':
+        if(!confirm('Thu hồi link? Khách sẽ không mở được nữa (có thể kích hoạt lại sau).')) return;
+        return patch({revoked:true},'Đã thu hồi link');
+      case 'activate': return patch({revoked:false},'Đã kích hoạt lại');
+      case 'delete':
+        if(!confirm(`Xoá vĩnh viễn link "${g.title}" và lựa chọn của khách?`)) return;
+        await api('/galleries/'+t,{method:'DELETE'}); toast('Đã xoá'); return loadList();
+    }
+  } catch(err) { toast(err.message); loadList(); }
+});
+
+boot();
+</script>
+</body>
+</html>
